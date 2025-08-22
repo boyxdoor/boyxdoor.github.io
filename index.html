@@ -71,6 +71,79 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Unity/UnityShader/Shader解析" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2025/08/21/Unity/UnityShader/Shader%E8%A7%A3%E6%9E%90/" class="article-date">
+  <time class="dt-published" datetime="2025-08-21T09:44:53.205Z" itemprop="datePublished">2025-08-21</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2025/08/21/Unity/UnityShader/Shader%E8%A7%A3%E6%9E%90/" data-id="cmemhepvg0009b8uhfzo065to" data-title="" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-godot/2D多图描边" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2025/08/08/godot/2D%E5%A4%9A%E5%9B%BE%E6%8F%8F%E8%BE%B9/" class="article-date">
+  <time class="dt-published" datetime="2025-08-08T07:15:37.229Z" itemprop="datePublished">2025-08-08</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2025/08/08/godot/2D%E5%A4%9A%E5%9B%BE%E6%8F%8F%E8%BE%B9/">2D多图描边</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h2 id="需求"><a href="#需求" class="headerlink" title="需求"></a>需求</h2><p>朋友godot开发游戏，要实现骨骼动画的描边效果，由多张图片组成，图片连接处不应该有描边，整体边缘才有。</p>
+<h2 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h2><p>参考B站视频 <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1fn4y1R7yg?vd_source=82bd62ccdedf030a7302a3a7f6ec970b">【技术档案】你的第一个Godot着色器：Bling Bling描边！</a>，加上官方文档，利用canvasgroup+shader实现</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">shader_type canvas_item;</span><br><span class="line">render_mode unshaded; // 禁用光照影响</span><br><span class="line"></span><br><span class="line">uniform float outline_width = 2.0;</span><br><span class="line">uniform vec4 outline_color : source_color = vec4(0, 0, 0, 1);</span><br><span class="line"></span><br><span class="line">// 关键：参考官方文档，声明后台缓冲纹理</span><br><span class="line">uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_nearest;</span><br><span class="line"></span><br><span class="line">void fragment() &#123;</span><br><span class="line">    vec2 uv = SCREEN_UV; //canvas_group下的图像</span><br><span class="line">    vec2 pixel_size = TEXTURE_PIXEL_SIZE * outline_width * 0.001;</span><br><span class="line">    </span><br><span class="line">    vec2 offsets[4] = vec2[](</span><br><span class="line">        vec2(0, pixel_size.y),    // 上</span><br><span class="line">        vec2(0, -pixel_size.y),   // 下</span><br><span class="line">        vec2(-pixel_size.x, 0),   // 左</span><br><span class="line">        vec2(pixel_size.x, 0)     // 右</span><br><span class="line">    );</span><br><span class="line">    </span><br><span class="line">    vec4 alpha_sampel = vec4(0);</span><br><span class="line">    for (int i = 0; i &lt; 4; i++) &#123;</span><br><span class="line">        vec4 c = texture(screen_texture, uv + offsets[i]);</span><br><span class="line">		alpha_sampel += c;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    vec4 outline = vec4(outline_color.rgb, alpha_sampel.a);</span><br><span class="line">    </span><br><span class="line">    vec4 original_color = texture(screen_texture, uv);</span><br><span class="line">    </span><br><span class="line">    // 混合描边与原图</span><br><span class="line">    COLOR = mix(outline, original_color, original_color.a);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="改进"><a href="#改进" class="headerlink" title="改进"></a>改进</h2><p>目前shader支持设置描边宽度，可以改进成额外支持自动动态调整描边宽度。提升不同缩放下的表现，比如角色很小时，描边应该相应缩小，但是不应该是等比例的，出于视觉效果考量，应该是x-y之间进行缩放width 最小是x对应的大小，最大是y对应的，在缩放为x-y之间变化时，width线性调整。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2025/08/08/godot/2D%E5%A4%9A%E5%9B%BE%E6%8F%8F%E8%BE%B9/" data-id="cmemhepva0000b8uhgdhg9p90" data-title="2D多图描边" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/2D/" rel="tag">2D</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/godot/" rel="tag">godot</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/shader/" rel="tag">shader</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B8%B8%E6%88%8F%E5%BC%80%E5%8F%91/" rel="tag">游戏开发</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-hello-world" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2025/06/26/hello-world/" class="article-date">
@@ -106,6 +179,92 @@
 <h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
 
 <p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+<h3 id="Git远程操作"><a href="#Git远程操作" class="headerlink" title="Git远程操作"></a>Git远程操作</h3><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-remote.html">git remote</a></td>
+<td>远程仓库操作</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-fetch.html">git fetch</a></td>
+<td>从远程获取代码库</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-pull.html">git pull</a></td>
+<td>下载远程代码并合并</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-push.html">git push</a></td>
+<td>上传远程代码并合并</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-submodule.html">git submodule</a></td>
+<td>管理包含其他 Git 仓库的项目</td>
+</tr>
+</tbody></table>
+<h3 id="Git提交与修改"><a href="#Git提交与修改" class="headerlink" title="Git提交与修改"></a>Git提交与修改</h3><p>Git 的工作就是创建和保存你的项目的快照及与之后的快照进行对比。</p>
+<p>下表列出了有关创建与提交你的项目的快照的命令：</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-add.html">git add</a></td>
+<td>添加文件到暂存区</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-status.html">git status</a></td>
+<td>查看仓库当前的状态，显示有变更的文件。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-diff.html">git diff</a></td>
+<td>比较文件的不同，即暂存区和工作区的差异。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-difftool.html">git difftool</a></td>
+<td>使用外部差异工具查看和比较文件的更改。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-range-diff.html">git range-diff</a></td>
+<td>比较两个提交范围之间的差异。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-commit.html">git commit</a></td>
+<td>提交暂存区到本地仓库。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-reset.html">git reset</a></td>
+<td>回退版本。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-rm.html">git rm</a></td>
+<td>将文件从暂存区和工作区中删除。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-mv.html">git mv</a></td>
+<td>移动或重命名工作区文件。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-notes.html">git notes</a></td>
+<td>添加注释。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-checkout.html">git checkout</a></td>
+<td>分支切换。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://www.runoob.com/git/git-show.html">git show</a></td>
+<td>显示 Git 对象的详细信息。</td>
+</tr>
+</tbody></table>
 
       
     </div>
@@ -132,15 +291,29 @@
 
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/2D/" rel="tag">2D</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/godot/" rel="tag">godot</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/shader/" rel="tag">shader</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%B8%E6%88%8F%E5%BC%80%E5%8F%91/" rel="tag">游戏开发</a></li></ul>
+    </div>
+  </div>
+
 
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/2D/" style="font-size: 10px;">2D</a> <a href="/tags/godot/" style="font-size: 10px;">godot</a> <a href="/tags/shader/" style="font-size: 10px;">shader</a> <a href="/tags/%E6%B8%B8%E6%88%8F%E5%BC%80%E5%8F%91/" style="font-size: 10px;">游戏开发</a>
+    </div>
+  </div>
+
   
     
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/06/">June 2025</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/08/">August 2025</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/06/">June 2025</a></li></ul>
     </div>
   </div>
 
@@ -151,6 +324,14 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2025/08/21/Unity/UnityShader/Shader%E8%A7%A3%E6%9E%90/">(no title)</a>
+          </li>
+        
+          <li>
+            <a href="/2025/08/08/godot/2D%E5%A4%9A%E5%9B%BE%E6%8F%8F%E8%BE%B9/">2D多图描边</a>
+          </li>
         
           <li>
             <a href="/2025/06/26/hello-world/">Hello World</a>
